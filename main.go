@@ -48,7 +48,7 @@ func main() {
 	jsonData := `[
 	{
 		"Component Name": "CU (UserPlane)",
-		"Workload Namespace": "oai-ran-cup",
+		"Workload Namespace": "oai-ran-cuup",
 		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-cu-up"},
 		"Sensitive Asset Locations": ["/etc/secrets"],
 		"Volume mounts": ["/mnt/data"]
