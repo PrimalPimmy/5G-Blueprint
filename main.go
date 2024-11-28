@@ -52,8 +52,8 @@ func main() {
 		"Component Name": "CU (UserPlane)",
 		"Workload Namespace": "oai-ran-cuup",
 		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-cu-up"},
-		"Sensitive Asset Locations": ["/etc/secrets"],
-		"Volume mounts": ["/mnt/data"]
+		"Sensitive Asset Locations": ["/opt/oai-gnb/etc/gnb.conf","/opt/oai-gnb/bin/nr-cuup", "/run/secrets/kubernetes.io/serviceaccount/"],
+		"Volume mounts": ["/opt/oai-gnb/etc/gnb.conf"]
 	}
 ]`
 
