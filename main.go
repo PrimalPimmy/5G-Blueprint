@@ -63,7 +63,7 @@ func main() {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Component Name", "Workload Namespace", "Workload Labels"})
+	table.SetHeader([]string{"Component Name", "Workload Namespace", "Workload Labels", "Sensitive Assets", "Volume Mounts"})
 
 	// Verify each workload
 	for _, workload := range workloads {
@@ -71,12 +71,14 @@ func main() {
 			fmt.Printf("Workload verification failed: %v\n", err)
 			continue
 		}
-		fmt.Printf("Workload found: %s in namespace %s with labels %v\n",
-			workload.ComponentName,
-			workload.WorkloadNamespace,
-			workload.WorkloadLabels)
+		// fmt.Printf("Workload found: %s in namespace %s with labels %v\n",
+		// 	workload.ComponentName,
+		// 	workload.WorkloadNamespace,
+		// 	workload.WorkloadLabels)
 		for k, v := range workload.WorkloadLabels {
-			table.Append([]string{workload.ComponentName, workload.WorkloadNamespace, k + "=" + v})
+			for _, assets := range workload.SensitiveLocations {
+				table.Append([]string{workload.ComponentName, workload.WorkloadNamespace, k + "=" + v, assets})
+			}
 		}
 		table.SetAutoMergeCells(true)
 
