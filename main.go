@@ -71,7 +71,6 @@ func main() {
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Component Name", "Workload Namespace", "Workload Labels", "Sensitive Assets", "Volume Mounts"})
-	table.SetRowLine(true)
 
 	// TABLE LOGIC WILL CHANGE
 	// Verify each workload
@@ -90,7 +89,7 @@ func main() {
 			}
 		}
 		table.SetAutoMergeCells(true)
-
+		table.SetRowSeparator("-")
 	}
 
 	table.Render()
