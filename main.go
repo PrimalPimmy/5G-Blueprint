@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 
+	"github.com/olekukonko/tablewriter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -60,6 +62,9 @@ func main() {
 		panic(err)
 	}
 
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Component Name", "Workload Namespace", "Workload Labels"})
+
 	// Verify each workload
 	for _, workload := range workloads {
 		if err := verifyWorkloadInCluster(clientset, workload); err != nil {
@@ -70,7 +75,14 @@ func main() {
 			workload.ComponentName,
 			workload.WorkloadNamespace,
 			workload.WorkloadLabels)
+		for k, v := range workload.WorkloadLabels {
+			table.Append([]string{workload.ComponentName, workload.WorkloadNamespace, k + "=" + v})
+		}
+		table.SetAutoMergeCells(true)
+
 	}
+
+	table.Render()
 }
 
 type Workload struct {
