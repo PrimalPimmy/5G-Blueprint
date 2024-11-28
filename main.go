@@ -54,6 +54,13 @@ func main() {
 		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-cu-up"},
 		"Sensitive Asset Locations": ["/opt/oai-gnb/etc/gnb.conf","/opt/oai-gnb/bin/nr-cuup", "/run/secrets/kubernetes.io/serviceaccount/"],
 		"Volume mounts": ["/opt/oai-gnb/etc/gnb.conf"]
+	},
+	{
+		"Component Name": "DU",
+		"Workload Namespace": "oai-ran-du",
+		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-du"},
+		"Sensitive Asset Locations": ["/run/secrets/kubernetes.io/serviceaccount/", "/opt/oai-gnb/etc/gnb.conf", "/opt/oai-gnb/bin/nr-softmodem"],
+		"Volume mounts": ["/opt/oai-gnb/etc/gnb.conf"]
 	}
 ]`
 
@@ -65,6 +72,7 @@ func main() {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Component Name", "Workload Namespace", "Workload Labels", "Sensitive Assets", "Volume Mounts"})
 
+	// TABLE LOGIC WILL CHANGE
 	// Verify each workload
 	for _, workload := range workloads {
 		if err := verifyWorkloadInCluster(clientset, workload); err != nil {
