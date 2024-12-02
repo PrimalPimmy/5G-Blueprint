@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/olekukonko/tablewriter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -45,62 +44,39 @@ func main() {
 	// if err != nil {
 	// 	panic(err.Error())
 	// }
+	jsonPath := flag.String("config", "", "path to JSON config file")
+	flag.Parse()
 
-	// Your JSON data
-	jsonData := `[
-	{
-		"Component Name": "CU (UserPlane)",
-		"Workload Namespace": "oai-ran-cuup",
-		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-cu-up"},
-		"Sensitive Asset Locations": ["/opt/oai-gnb/etc/gnb.conf","/opt/oai-gnb/bin/nr-cuup", "/run/secrets/kubernetes.io/serviceaccount/"],
-		"Volume mounts": ["/opt/oai-gnb/etc/gnb.conf"]
-	},
-	{
-		"Component Name": "DU",
-		"Workload Namespace": "oai-ran-du",
-		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-du"},
-		"Sensitive Asset Locations": ["/run/secrets/kubernetes.io/serviceaccount/", "/opt/oai-gnb/etc/gnb.conf", "/opt/oai-gnb/bin/nr-softmodem"],
-		"Volume mounts": ["/opt/oai-gnb/etc/gnb.conf"]
+	// Check if file path is provided
+	if *jsonPath == "" {
+		fmt.Println("Please provide a JSON file path using -config flag")
+		os.Exit(1)
 	}
-]`
+
+	// Read the file
+	data, err := os.ReadFile(*jsonPath)
+	if err != nil {
+		fmt.Printf("Error reading file: %v\n", err)
+		os.Exit(1)
+	}
 
 	var workloads []Workload
-	if err := json.Unmarshal([]byte(jsonData), &workloads); err != nil {
+	if err := json.Unmarshal([]byte(data), &workloads); err != nil {
 		panic(err)
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Component Name", "Workload Namespace", "Workload Labels", "Sensitive Assets", "Volume Mounts"})
-
-	// TABLE LOGIC WILL CHANGE
-	// Verify each workload
 	for _, workload := range workloads {
-		if err := verifyWorkloadInCluster(clientset, workload); err != nil {
-			fmt.Printf("Workload verification failed: %v\n", err)
-			continue
-		}
-		// fmt.Printf("Workload found: %s in namespace %s with labels %v\n",
-		// 	workload.ComponentName,
-		// 	workload.WorkloadNamespace,
-		// 	workload.WorkloadLabels)
-		for k, v := range workload.WorkloadLabels {
-			for _, assets := range workload.SensitiveLocations {
-				table.Append([]string{workload.ComponentName, workload.WorkloadNamespace, k + "=" + v, assets})
-			}
-		}
-		table.SetAutoMergeCells(true)
-		table.SetRowSeparator("-")
+		verifyWorkloadInCluster(clientset, workload)
 	}
 
-	table.Render()
 }
 
 type Workload struct {
-	ComponentName      string            `json:"Component Name"`
-	WorkloadNamespace  string            `json:"Workload Namespace"`
-	WorkloadLabels     map[string]string `json:"Workload Labels"`
-	SensitiveLocations []string          `json:"Sensitive Asset Locations"`
-	VolumeMounts       []string          `json:"Volume mounts"`
+	ComponentName      string   `json:"Component Name"`
+	WorkloadNamespace  string   `json:"Workload Namespace"`
+	WorkloadLabels     []string `json:"Workload Labels"`
+	SensitiveLocations []string `json:"Sensitive Asset Locations"`
+	VolumeMounts       []string `json:"Volume mounts"`
 }
 
 func verifyWorkloadInCluster(clientset *kubernetes.Clientset, workload Workload) error {
@@ -112,11 +88,11 @@ func verifyWorkloadInCluster(clientset *kubernetes.Clientset, workload Workload)
 
 	// Create label selector from workload labels
 	var labelSelector string
-	for k, v := range workload.WorkloadLabels {
+	for _, v := range workload.WorkloadLabels {
 		if labelSelector != "" {
 			labelSelector += ","
 		}
-		labelSelector += fmt.Sprintf("%s=%s", k, v)
+		labelSelector += v
 	}
 
 	// Check if pods with these labels exist in the namespace
