@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -104,6 +105,8 @@ func verifyWorkloadInCluster(clientset *kubernetes.Clientset, workload Workload)
 	if len(pods.Items) == 0 {
 		return fmt.Errorf("no pods found with labels %v in namespace %s", workload.WorkloadLabels, workload.WorkloadNamespace)
 	}
+	labelString := strings.Join(workload.WorkloadLabels, "\n")
+	fmt.Println("Pod found in namespace" + workload.WorkloadNamespace + "with labels: " + labelString)
 
 	return nil
 }
