@@ -1,0 +1,16 @@
+[
+	{
+		"Component Name": "CU (UserPlane)",
+		"Workload Namespace": "oai-ran-cuup",
+		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-cu-up"},
+		"Sensitive Asset Locations": ["/opt/oai-gnb/etc/gnb.conf","/opt/oai-gnb/bin/nr-cuup", "/run/secrets/kubernetes.io/serviceaccount/"],
+		"Volume mounts": ["/opt/oai-gnb/etc/gnb.conf"]
+	},
+	{
+		"Component Name": "DU",
+		"Workload Namespace": "oai-ran-du",
+		"Workload Labels": {"app.kubernetes.io/name": "oai-gnb-du"},
+		"Sensitive Asset Locations": ["/run/secrets/kubernetes.io/serviceaccount/", "/opt/oai-gnb/etc/gnb.conf", "/opt/oai-gnb/bin/nr-softmodem"],
+		"Volume mounts": ["/opt/oai-gnb/etc/gnb.conf"]
+	}
+]
