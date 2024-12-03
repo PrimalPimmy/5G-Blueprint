@@ -138,65 +138,61 @@ func main() {
 		MapRisks := mergeResponses(risk)
 
 		tmpl := `
-		<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-    </style>
-</head>
-<body>
-    <table>
-        <thead>
-            <tr>
-                <th>Risk ID</th>
-                <th>Risk Description</th>
-                <th>Checkpoints</th>
-                <th>Assets</th>
-                <th>Exploitability</th>
-                <th>Severity</th>
-                <th>Est Remediation Time</th>
-                <th>Solutions</th>
-                <th>References</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{range $index, $element := .}}
-            <tr>
-                {{if and (gt $index 0) (eq .RiskID (index $ (sub $index 1)).RiskID)}}
-                    <!-- Skip td if same as previous -->
-                {{else}}
-                    <td rowspan="{{countSameValues $ $index .RiskID}}">{{.RiskID}}</td>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+        </style>
+    </head>
+    <body>
+        <table>
+            <thead>
+                <tr>
+                    <th>Risk ID</th>
+                    <th>Risk Description</th>
+                    <th>Checkpoints</th>
+                    <th>Assets</th>
+                    <th>Exploitability</th>
+                    <th>Severity</th>
+                    <th>Est Remediation Time</th>
+                    <th>Solutions</th>
+                    <th>References</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .}}
+                <tr>
+                    <td>{{.RiskID}}</td>
+                    <td>{{.RiskDescription}}</td>
+                    <td>{{.Checkpoints}}</td>
+                    <td>{{.Assets}}</td>
+                    <td>{{.Exploitability}}</td>
+                    <td>{{.Severity}}</td>
+                    <td>{{.RemediationTime}}</td>
+                    <td>{{.Solutions}}</td>
+                    <td>{{.References}}</td>
+                </tr>
                 {{end}}
-                <td>{{.RiskDescription}}</td>
-                <td>{{.Checkpoints}}</td>
-                <td>{{.Assets}}</td>
-                <td>{{.Exploitability}}</td>
-                <td>{{.Severity}}</td>
-                <td>{{.RemediationTime}}</td>
-                <td>{{.Solutions}}</td>
-                <td>{{.References}}</td>
-            </tr>
-            {{end}}
-        </tbody>
-    </table>
-</body>
-</html>
+            </tbody>
+        </table>
+    </body>
+    </html>
 `
 		t := template.Must(template.New("table").Parse(tmpl))
 		for _, v := range MapRisks {
