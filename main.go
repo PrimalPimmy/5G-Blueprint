@@ -98,7 +98,7 @@ func main() {
 	if err := json.Unmarshal([]byte(data), &workloads); err != nil {
 		panic(err)
 	}
-	var risk RiskList
+	var risk []RiskList
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Read YAML config
 		f, err := os.ReadFile("risk_config.yaml")
@@ -119,7 +119,7 @@ func main() {
 			checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
 			for _, r := range risks.Risks {
 				// Create risk struct with config data
-				risk = RiskList{
+				risk = append(risk, RiskList{
 					RiskID:          r.RiskID,
 					RiskDescription: r.RiskDescription,
 					Severity:        r.Severity,
@@ -130,7 +130,7 @@ func main() {
 					EstRemidiation: "High",
 					Solutions:      "Test solutions",
 					References:     []string{"Reference 1", "Reference 2"},
-				}
+				})
 			}
 
 		}
