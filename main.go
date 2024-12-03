@@ -116,7 +116,7 @@ func main() {
 		for _, workload := range workloads {
 			verifyWorkloadInCluster(clientset, workload)
 			var check []Checkpoint
-			Assets, isThere, _ := checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
+			_, isThere, _ := checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
 			for _, r := range risks.Risks {
 				if isThere {
 					check = []Checkpoint{
