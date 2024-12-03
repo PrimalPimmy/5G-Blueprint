@@ -26,7 +26,7 @@ type RiskList struct {
 	Assets          []string
 	Exploitability  string
 	Severity        string
-	EstRemidiation  string
+	RemediationTime string
 	Solutions       string
 	References      []string
 }
@@ -124,12 +124,11 @@ func main() {
 					RiskDescription: r.RiskDescription,
 					Severity:        r.Severity,
 					Checkpoints:     []string{"Is TLS Enabled?", "Least Permissive Policies?"},
-					// Example data for other fields
-					Assets:         workload.SensitiveLocations,
-					Exploitability: "High",
-					EstRemidiation: "High",
-					Solutions:      "Test solutions",
-					References:     []string{"Reference 1", "Reference 2"},
+					Assets:          workload.SensitiveLocations,
+					Exploitability:  "High",
+					RemediationTime: "High",
+					Solutions:       "Test solutions",
+					References:      []string{"Reference 1", "Reference 2"},
 				})
 			}
 
