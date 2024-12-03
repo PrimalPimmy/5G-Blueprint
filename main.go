@@ -156,6 +156,8 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) error {
 						}
 					}
 				}
+			} else if !ok {
+				fmt.Println("ERROR NOT FOUND")
 			}
 		}
 	}
