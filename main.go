@@ -113,8 +113,6 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Println("YAML FILE: ", risks)
-
 		for _, workload := range workloads {
 			verifyWorkloadInCluster(clientset, workload)
 			checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
