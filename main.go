@@ -68,7 +68,7 @@ func main() {
 
 	for _, workload := range workloads {
 		verifyWorkloadInCluster(clientset, workload)
-		checkSensitiveDirs(config, workload.SensitiveLocations)
+		checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
 	}
 
 }
@@ -118,7 +118,7 @@ type FileMatch struct {
 	Recursive bool
 }
 
-func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) error {
+func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []string) error {
 	// Create in-cluster config
 
 	dynamicClient, err := dynamic.NewForConfig(config)
@@ -134,7 +134,7 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) error {
 	}
 
 	// List all policies across all namespaces
-	policies, err := dynamicClient.Resource(gvr).Namespace("").List(context.TODO(), metav1.ListOptions{})
+	policies, err := dynamicClient.Resource(gvr).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list policies: %w", err)
 	}
@@ -197,12 +197,12 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) error {
 					continue
 				}
 
-				readOnly, _ := pathMap["readOnly"].(bool)
+				// readOnly, _ := pathMap["readOnly"].(bool)
 
 				for _, sensitiveDir := range sensitiveDirs {
 					if filePath == sensitiveDir {
 						fmt.Printf("Found sensitive path in policy %s:\n  Path: %s\n  Action: %s\n  ReadOnly: %v\n",
-							policy.GetName(), filePath, action, readOnly)
+							policy.GetName(), filePath, action)
 					}
 				}
 			}
