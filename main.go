@@ -135,57 +135,65 @@ func main() {
 
 		}
 
-		tmpl := template.Must(template.New("table").Parse(`
-        <html>
-        <head>
-            <style>
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                }
-                th, td {
-                    border: 1px solid black;
-                    padding: 8px;
-                    text-align: left;
-                }
-                th {
-                    background-color: #f2f2f2;
-                }
-                td ul {
-                    margin: 0;
-                    padding-left: 20px;
-                }
-            </style>
-        </head>
-        <body>
-            <table>
-                <tr>
-                    <th>Risk ID</th>
-                    <th>Risk Description</th>
-                    <th>Checkpoints</th>
-                    <th>Assets</th>
-                    <th>Exploitability</th>
-                    <th>Severity</th>
-                    <th>Est Remidiation Time</th>
-                    <th>Solutions</th>
-                    <th>References</th>
-                </tr>
-                <tr>
-                    <td>{{.RiskID}}</td>
-                    <td>{{.RiskDescription}}</td>
-                    <td><ul>{{range .Checkpoints}}<li>{{.}}</li>{{end}}</ul></td>
-                    <td><ul>{{range .Assets}}<li>{{.}}</li>{{end}}</ul></td>
-                    <td><ul>{{range .Exploitability}}<li>{{.}}</li>{{end}}</ul></td>
-                    <td><ul>{{range .Severity}}<li>{{.}}</li>{{end}}</ul></td>
-                    <td><ul>{{range .EstRemidiation}}<li>{{.}}</li>{{end}}</ul></td>
-                    <td><ul>{{range .Solutions}}<li>{{.}}</li>{{end}}</ul></td>
-                    <td><ul>{{range .References}}<li>{{.}}</li>{{end}}</ul></td>
-                </tr>
-            </table>
-        </body>
-        </html>`))
+		tmpl := `
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<style>
+				table {
+					width: 100%;
+					border-collapse: collapse;
+					margin: 20px 0;
+				}
+				th, td {
+					border: 1px solid #ddd;
+					padding: 8px;
+					text-align: left;
+				}
+				th {
+					background-color: #f2f2f2;
+				}
+				tr:nth-child(even) {
+					background-color: #f9f9f9;
+				}
+			</style>
+		</head>
+		<body>
+			<table>
+				<thead>
+					<tr>
+						<th>Risk ID</th>
+						<th>Risk Description</th>
+						<th>Checkpoints</th>
+						<th>Assets</th>
+						<th>Exploitability</th>
+						<th>Severity</th>
+						<th>Est Remediation Time</th>
+						<th>Solutions</th>
+						<th>References</th>
+					</tr>
+				</thead>
+				<tbody>
+					{{range .}}
+					<tr>
+						<td>{{.RiskID}}</td>
+						<td>{{.RiskDescription}}</td>
+						<td>{{.Checkpoints}}</td>
+						<td>{{.Assets}}</td>
+						<td>{{.Exploitability}}</td>
+						<td>{{.Severity}}</td>
+						<td>{{.RemediationTime}}</td>
+						<td>{{.Solutions}}</td>
+						<td>{{.References}}</td>
+					</tr>
+					{{end}}
+				</tbody>
+			</table>
+		</body>
+		</html>`
+		t := template.Must(template.New("table").Parse(tmpl))
 
-		tmpl.Execute(w, risk)
+		t.Execute(w, risk)
 	})
 
 	http.ListenAndServe(":8080", nil)
