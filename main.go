@@ -194,8 +194,9 @@ func main() {
     </body>
     </html>
 `
-		t := template.Must(template.New("table").Parse(tmpl))
+
 		for _, v := range MapRisks {
+			t := template.Must(template.New("table").Parse(tmpl))
 			t.Execute(w, v)
 			break
 		}
