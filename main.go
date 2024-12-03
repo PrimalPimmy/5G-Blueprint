@@ -339,8 +339,6 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 						policy.GetName(), dirPath, action)
 					Assets = append(Assets, dirPath)
 					// return dirPath, nil
-				} else {
-					return nil, false, err
 				}
 			}
 		}
@@ -371,8 +369,6 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 							policy.GetName(), filePath, action)
 						Assets = append(Assets, filePath)
 
-					} else {
-						return nil, false, err
 					}
 				}
 			}
