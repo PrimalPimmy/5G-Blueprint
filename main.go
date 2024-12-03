@@ -115,10 +115,19 @@ func main() {
 
 		for _, workload := range workloads {
 			verifyWorkloadInCluster(clientset, workload)
-			checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
+			var check []Checkpoint
+			Assets, isThere, _ := checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
 			for _, r := range risks.Risks {
-				check := []Checkpoint{
-					{Satisfied: true, Description: "Least Permessive Policies for Sensitive Assets?"},
+				if isThere {
+					check = []Checkpoint{
+						{Satisfied: true, Description: "Least Permessive Policies for Sensitive Assets?"},
+					}
+
+				} else {
+					check = []Checkpoint{
+						{Satisfied: false, Description: "Least Permessive Policies for Sensitive Assets?"},
+					}
+
 				}
 				// Create risk struct with config data
 				risk = append(risk, RiskList{
@@ -126,7 +135,7 @@ func main() {
 					RiskDescription: r.RiskDescription,
 					Severity:        r.Severity,
 					Checkpoints:     check,
-					Assets:          workload.SensitiveLocations,
+					Assets:          Assets,
 					Exploitability:  "High",
 					RemediationTime: "High",
 					Solutions:       "Test solutions",
@@ -270,12 +279,12 @@ type FileMatch struct {
 	Recursive bool
 }
 
-func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []string) (string, error) {
+func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []string) ([]string, bool, error) {
 	// Create in-cluster config
-
+	var Assets []string
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		return "", fmt.Errorf("failed to create dynamic client: %w", err)
+		return nil, false, fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
 	// Define KubeArmorPolicy GVR
@@ -288,7 +297,7 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 	// List all policies across all namespaces
 	policies, err := dynamicClient.Resource(gvr).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return "", fmt.Errorf("failed to list policies: %w", err)
+		return nil, false, fmt.Errorf("failed to list policies: %w", err)
 	}
 
 	for _, policy := range policies.Items {
@@ -327,7 +336,7 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 				if dirPath == sensitiveDir {
 					fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 						policy.GetName(), dirPath, action)
-
+					Assets = append(Assets, dirPath)
 					// return dirPath, nil
 				}
 			}
@@ -357,14 +366,15 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 					if filePath == sensitiveDir {
 						fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 							policy.GetName(), filePath, action)
-						// return filePath, nil
+						Assets = append(Assets, filePath)
+
 					}
 				}
 			}
 		}
 
 	}
-	return "", nil
+	return Assets, true, nil
 }
 
 func mergeResponses(risks []RiskList) map[string][]RiskList {
