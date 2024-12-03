@@ -23,7 +23,7 @@ import (
 type RiskList struct {
 	RiskID          string
 	RiskDescription string
-	Checkpoints     []string
+	Checkpoints     []Checkpoint
 	Assets          []string
 	Exploitability  string
 	Severity        string
@@ -40,9 +40,8 @@ type RiskConfig struct {
 }
 
 type Checkpoint struct {
-	TLS                      bool `yaml:"TLS"`
-	SensitiveAssetProtection bool `yaml:"sensitive_asset_protection"`
-	NetworkPolicy            bool `yaml:"network_policy"`
+	Satisfied   bool
+	Description string
 }
 
 type Risks struct {
@@ -120,12 +119,15 @@ func main() {
 			verifyWorkloadInCluster(clientset, workload)
 			checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
 			for _, r := range risks.Risks {
+				check := []Checkpoint{
+					{Satisfied: true, Description: "Least Permessive Policies for Sensitive Assets?"},
+				}
 				// Create risk struct with config data
 				risk = append(risk, RiskList{
 					RiskID:          r.RiskID,
 					RiskDescription: r.RiskDescription,
 					Severity:        r.Severity,
-					Checkpoints:     []string{"Is TLS Enabled?", "Least Permissive Policies?"},
+					Checkpoints:     check,
 					Assets:          workload.SensitiveLocations,
 					Exploitability:  "High",
 					RemediationTime: "High",
@@ -139,61 +141,78 @@ func main() {
 		MapRisks := mergeResponses(risk)
 
 		tmpl := `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-            }
-            th, td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-            }
-            th {
-                background-color: #f2f2f2;
-            }
-            tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-        </style>
-    </head>
-    <body>
-        <table>
-            <thead>
-                <tr>
-                    <th>Risk ID</th>
-                    <th>Risk Description</th>
-                    <th>Checkpoints</th>
-                    <th>Assets</th>
-                    <th>Exploitability</th>
-                    <th>Severity</th>
-                    <th>Est Remediation Time</th>
-                    <th>Solutions</th>
-                    <th>References</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .}}
-                <tr>
-                    <td>{{.RiskID}}</td>
-                    <td>{{.RiskDescription}}</td>
-                    <td>{{.Checkpoints}}</td>
-                    <td>{{.Assets}}</td>
-                    <td>{{.Exploitability}}</td>
-                    <td>{{.Severity}}</td>
-                    <td>{{.RemediationTime}}</td>
-                    <td>{{.Solutions}}</td>
-                    <td>{{.References}}</td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
-    </body>
-    </html>
+ <!DOCTYPE html>
+<html>
+<head>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .tick {
+            color: green;
+        }
+        .cross {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>Risk ID</th>
+                <th>Risk Description</th>
+                <th>Checkpoints</th>
+                <th>Assets</th>
+                <th>Exploitability</th>
+                <th>Severity</th>
+                <th>Est Remediation Time</th>
+                <th>Solutions</th>
+                <th>References</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .}}
+            <tr>
+                <td>{{.RiskID}}</td>
+                <td>{{.RiskDescription}}</td>
+                <td>
+                    {{range .Checkpoints}}
+                        <div>
+                            {{if .Satisfied}}
+                                <span class="tick">✓</span>
+                            {{else}}
+                                <span class="cross">✗</span>
+                            {{end}}
+                            {{.Description}}
+                        </div>
+                    {{end}}
+                </td>
+                <td>{{.Assets}}</td>
+                <td>{{.Exploitability}}</td>
+                <td>{{.Severity}}</td>
+                <td>{{.RemediationTime}}</td>
+                <td>{{.Solutions}}</td>
+                <td>{{.References}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</body>
+</html>
 `
 
 		for _, v := range MapRisks {
@@ -253,12 +272,12 @@ type FileMatch struct {
 	Recursive bool
 }
 
-func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []string) error {
+func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []string) (string, error) {
 	// Create in-cluster config
 
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
+		return "", fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
 	// Define KubeArmorPolicy GVR
@@ -271,7 +290,7 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 	// List all policies across all namespaces
 	policies, err := dynamicClient.Resource(gvr).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to list policies: %w", err)
+		return "", fmt.Errorf("failed to list policies: %w", err)
 	}
 
 	for _, policy := range policies.Items {
@@ -308,8 +327,10 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 
 			for _, sensitiveDir := range sensitiveDirs {
 				if dirPath == sensitiveDir {
-					fmt.Printf("Found sensitive dir in policy %s:\n  Path: %s\n  Action: %s\n",
+					fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 						policy.GetName(), dirPath, action)
+
+					return dirPath, nil
 				}
 			}
 		}
@@ -336,15 +357,16 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 
 				for _, sensitiveDir := range sensitiveDirs {
 					if filePath == sensitiveDir {
-						fmt.Printf("Found sensitive path in policy %s:\n  Path: %s\n  Action: %s\n",
+						fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 							policy.GetName(), filePath, action)
+						return filePath, nil
 					}
 				}
 			}
 		}
 
 	}
-	return nil
+	return "", nil
 }
 
 func mergeResponses(risks []RiskList) map[string][]RiskList {
