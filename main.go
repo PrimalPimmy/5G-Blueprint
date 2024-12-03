@@ -98,7 +98,7 @@ func main() {
 	if err := json.Unmarshal([]byte(data), &workloads); err != nil {
 		panic(err)
 	}
-
+	var risk RiskList
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Read YAML config
 		f, err := os.ReadFile("risk_config.yaml")
@@ -111,8 +111,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		var risk RiskList
 
 		for _, workload := range workloads {
 			verifyWorkloadInCluster(clientset, workload)
