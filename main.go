@@ -6,10 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -66,6 +68,7 @@ func main() {
 
 	for _, workload := range workloads {
 		verifyWorkloadInCluster(clientset, workload)
+		checkSensitiveDirs(config, workload.SensitiveLocations)
 	}
 
 }
@@ -105,8 +108,56 @@ func verifyWorkloadInCluster(clientset *kubernetes.Clientset, workload Workload)
 	if len(pods.Items) == 0 {
 		return fmt.Errorf("no pods found with labels %v in namespace %s", workload.WorkloadLabels, workload.WorkloadNamespace)
 	}
-	labelString := strings.Join(workload.WorkloadLabels, "\n")
-	fmt.Println("Pod found in namespace" + workload.WorkloadNamespace + "with labels: " + labelString)
 
+	return nil
+}
+
+type FileMatch struct {
+	Dir       string
+	Action    string
+	Recursive bool
+}
+
+func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) error {
+	// Create in-cluster config
+
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	// Define KubeArmorPolicy GVR
+	gvr := schema.GroupVersionResource{
+		Group:    "security.kubearmor.com",
+		Version:  "v1",
+		Resource: "kubearmorpolicies",
+	}
+
+	// List all policies across all namespaces
+	policies, err := dynamicClient.Resource(gvr).Namespace("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list policies: %w", err)
+	}
+
+	for _, policy := range policies.Items {
+		spec := policy.Object["spec"].(map[string]interface{})
+
+		if file, ok := spec["file"].(map[string]interface{}); ok {
+			if dirs, ok := file["matchDirectories"].([]interface{}); ok {
+				for _, dir := range dirs {
+					dirMap := dir.(map[string]interface{})
+					dirPath := dirMap["dir"].(string)
+					action := dirMap["action"].(string)
+
+					for _, sensitiveDir := range sensitiveDirs {
+						if dirPath == sensitiveDir {
+							fmt.Printf("Found sensitive dir in policy %s:\n  Path: %s\n  Action: %s\n",
+								policy.GetName(), dirPath, action)
+						}
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
