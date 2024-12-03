@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
+	"log"
+	"net/http"
 	"os"
 
+	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -14,6 +18,25 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+type RiskList struct {
+	RiskID          string
+	RiskDescription string
+	Checkpoints     []string
+	Assets          []string
+	Exploitability  string
+	Severity        string
+	EstRemidiation  string
+	Solutions       string
+	References      []string
+}
+
+type RiskConfig struct {
+	RiskID          string   `yaml:"risk_id"`
+	RiskDescription string   `yaml:"risk_description"`
+	Severity        string   `yaml:"severity"`
+	Checkpoints     []string `yaml:"checkpoints"`
+}
 
 func main() {
 	// // Create in-cluster config
@@ -66,10 +89,94 @@ func main() {
 		panic(err)
 	}
 
-	for _, workload := range workloads {
-		verifyWorkloadInCluster(clientset, workload)
-		checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
-	}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Read YAML config
+		f, err := os.ReadFile("risk_config.yaml")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var riskConfig RiskConfig
+		err = yaml.Unmarshal(f, &riskConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var risk RiskList
+
+		for _, workload := range workloads {
+			verifyWorkloadInCluster(clientset, workload)
+			checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
+
+			// Create risk struct with config data
+			risk = RiskList{
+				RiskID:          riskConfig.RiskID,
+				RiskDescription: riskConfig.RiskDescription,
+				Severity:        riskConfig.Severity,
+				Checkpoints:     riskConfig.Checkpoints,
+				// Example data for other fields
+				Assets:         workload.SensitiveLocations,
+				Exploitability: "High",
+				EstRemidiation: "High",
+				Solutions:      "Test solutions",
+				References:     []string{"Reference 1", "Reference 2"},
+			}
+		}
+
+		tmpl := template.Must(template.New("table").Parse(`
+        <html>
+        <head>
+            <style>
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                }
+                th, td {
+                    border: 1px solid black;
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
+                td ul {
+                    margin: 0;
+                    padding-left: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <table>
+                <tr>
+                    <th>Risk ID</th>
+                    <th>Risk Description</th>
+                    <th>Checkpoints</th>
+                    <th>Assets</th>
+                    <th>Exploitability</th>
+                    <th>Severity</th>
+                    <th>Est Remidiation Time</th>
+                    <th>Solutions</th>
+                    <th>References</th>
+                </tr>
+                <tr>
+                    <td>{{.RiskID}}</td>
+                    <td>{{.RiskDescription}}</td>
+                    <td><ul>{{range .Checkpoints}}<li>{{.}}</li>{{end}}</ul></td>
+                    <td><ul>{{range .Assets}}<li>{{.}}</li>{{end}}</ul></td>
+                    <td><ul>{{range .Exploitability}}<li>{{.}}</li>{{end}}</ul></td>
+                    <td><ul>{{range .Severity}}<li>{{.}}</li>{{end}}</ul></td>
+                    <td><ul>{{range .EstRemidiation}}<li>{{.}}</li>{{end}}</ul></td>
+                    <td><ul>{{range .Solutions}}<li>{{.}}</li>{{end}}</ul></td>
+                    <td><ul>{{range .References}}<li>{{.}}</li>{{end}}</ul></td>
+                </tr>
+            </table>
+        </body>
+        </html>`))
+
+		tmpl.Execute(w, risk)
+	})
+
+	http.ListenAndServe(":8080", nil)
 
 }
 
@@ -201,7 +308,7 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 
 				for _, sensitiveDir := range sensitiveDirs {
 					if filePath == sensitiveDir {
-						fmt.Printf("Found sensitive path in policy %s:\n  Path: %s\n  Action: %s\n  ReadOnly: %v\n",
+						fmt.Printf("Found sensitive path in policy %s:\n  Path: %s\n  Action: %s\n",
 							policy.GetName(), filePath, action)
 					}
 				}
