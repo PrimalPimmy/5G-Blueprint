@@ -197,6 +197,7 @@ func main() {
 		t := template.Must(template.New("table").Parse(tmpl))
 		for _, v := range MapRisks {
 			t.Execute(w, v)
+			break
 		}
 
 	})
