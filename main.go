@@ -135,7 +135,7 @@ func main() {
 					RiskDescription: r.RiskDescription,
 					Severity:        r.Severity,
 					Checkpoints:     check,
-					Assets:          Assets,
+					Assets:          workload.SensitiveLocations,
 					Exploitability:  "High",
 					RemediationTime: "High",
 					Solutions:       "Test solutions",
