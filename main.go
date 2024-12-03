@@ -178,6 +178,36 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) error {
 				}
 			}
 		}
+
+		// Check matchPaths
+		if matchPaths, ok := file["matchPaths"].([]interface{}); ok {
+			for _, path := range matchPaths {
+				pathMap, ok := path.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				filePath, ok := pathMap["path"].(string)
+				if !ok {
+					continue
+				}
+
+				action, ok := pathMap["action"].(string)
+				if !ok {
+					continue
+				}
+
+				readOnly, _ := pathMap["readOnly"].(bool)
+
+				for _, sensitiveDir := range sensitiveDirs {
+					if filePath == sensitiveDir {
+						fmt.Printf("Found sensitive path in policy %s:\n  Path: %s\n  Action: %s\n  ReadOnly: %v\n",
+							policy.GetName(), filePath, action, readOnly)
+					}
+				}
+			}
+		}
+
 	}
 	return nil
 }
