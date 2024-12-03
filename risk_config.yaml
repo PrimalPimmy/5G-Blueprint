@@ -1,0 +1,18 @@
+risks:
+  - risk_id: "T-O-RAN-01 (O-CU)"
+    risk_description: "Unauthenticated/unauthorized access of the O_RAN component leads to compromised performance and/or function/service, lateral attack towards other O-RAN system component(s) from inside, and loss/stolen/tampering of sensitive data"
+    severity: "High"
+    checkpoints:
+      TLS: false
+      sensitive_asset_protection: true
+      network_policy: true
+
+
+  - risk_id: "T-O-RAN-01 (O-DU)"
+    risk_description: "Unauthenticated/unauthorized access of the O_RAN component leads to compromised performance and/or function/service, lateral attack towards other O-RAN system component(s) from inside, and loss/stolen/tampering of sensitive data"
+    severity: "High"
+    checkpoints:
+      TLS: false
+      sensitive_asset_protection: true
+      network_policy: true
+
