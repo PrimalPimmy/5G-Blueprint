@@ -22,7 +22,7 @@ import (
 type RiskList struct {
 	RiskID          string
 	RiskDescription string
-	Checkpoints     []string
+	Checkpoints     Checkpoint
 	Assets          []string
 	Exploitability  string
 	Severity        string
@@ -32,10 +32,20 @@ type RiskList struct {
 }
 
 type RiskConfig struct {
-	RiskID          string   `yaml:"risk_id"`
-	RiskDescription string   `yaml:"risk_description"`
-	Severity        string   `yaml:"severity"`
-	Checkpoints     []string `yaml:"checkpoints"`
+	RiskID          string     `yaml:"risk_id"`
+	RiskDescription string     `yaml:"risk_description"`
+	Severity        string     `yaml:"severity"`
+	Checkpoints     Checkpoint `yaml:"checkpoints"`
+}
+
+type Checkpoint struct {
+	TLS                      bool `yaml:"TLS"`
+	SensitiveAssetProtection bool `yaml:"sensitive_asset_protection"`
+	NetworkPolicy            bool `yaml:"network_policy"`
+}
+
+type Risks struct {
+	Risks []RiskConfig `yaml:"risks"`
 }
 
 func main() {
@@ -96,8 +106,8 @@ func main() {
 			log.Fatal(err)
 		}
 
-		var riskConfig RiskConfig
-		err = yaml.Unmarshal(f, &riskConfig)
+		var risks Risks
+		err = yaml.Unmarshal(f, &risks)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -107,20 +117,22 @@ func main() {
 		for _, workload := range workloads {
 			verifyWorkloadInCluster(clientset, workload)
 			checkSensitiveDirs(workload.WorkloadNamespace, config, workload.SensitiveLocations)
-
-			// Create risk struct with config data
-			risk = RiskList{
-				RiskID:          riskConfig.RiskID,
-				RiskDescription: riskConfig.RiskDescription,
-				Severity:        riskConfig.Severity,
-				Checkpoints:     riskConfig.Checkpoints,
-				// Example data for other fields
-				Assets:         workload.SensitiveLocations,
-				Exploitability: "High",
-				EstRemidiation: "High",
-				Solutions:      "Test solutions",
-				References:     []string{"Reference 1", "Reference 2"},
+			for _, r := range risks.Risks {
+				// Create risk struct with config data
+				risk = RiskList{
+					RiskID:          r.RiskID,
+					RiskDescription: r.RiskDescription,
+					Severity:        r.Severity,
+					Checkpoints:     r.Checkpoints,
+					// Example data for other fields
+					Assets:         workload.SensitiveLocations,
+					Exploitability: "High",
+					EstRemidiation: "High",
+					Solutions:      "Test solutions",
+					References:     []string{"Reference 1", "Reference 2"},
+				}
 			}
+
 		}
 
 		tmpl := template.Must(template.New("table").Parse(`
