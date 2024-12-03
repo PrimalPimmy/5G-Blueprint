@@ -22,7 +22,7 @@ import (
 type RiskList struct {
 	RiskID          string
 	RiskDescription string
-	Checkpoints     Checkpoint
+	Checkpoints     []string
 	Assets          []string
 	Exploitability  string
 	Severity        string
@@ -121,7 +121,7 @@ func main() {
 					RiskID:          r.RiskID,
 					RiskDescription: r.RiskDescription,
 					Severity:        r.Severity,
-					Checkpoints:     r.Checkpoints,
+					Checkpoints:     []string{"Is TLS Enabled?", "Least Permissive Policies?"},
 					// Example data for other fields
 					Assets:         workload.SensitiveLocations,
 					Exploitability: "High",
