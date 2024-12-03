@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,6 +135,8 @@ func main() {
 
 		}
 
+		MapRisks := mergeResponses(risk)
+
 		tmpl := `
 		<!DOCTYPE html>
 <html>
@@ -196,8 +199,10 @@ func main() {
 </html>
 `
 		t := template.Must(template.New("table").Parse(tmpl))
+		for _, v := range MapRisks {
+			t.Execute(w, v)
+		}
 
-		t.Execute(w, risk)
 	})
 
 	http.ListenAndServe(":8080", nil)
@@ -341,4 +346,15 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 
 	}
 	return nil
+}
+
+func mergeResponses(risks []RiskList) map[string][]RiskList {
+	merged := make(map[string][]RiskList)
+
+	for _, response := range risks {
+		key := strings.Join(response.Assets, "\n")
+		merged[key] = append(merged[key], response)
+	}
+
+	return merged
 }
