@@ -140,24 +140,42 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) error {
 	}
 
 	for _, policy := range policies.Items {
-		spec := policy.Object["spec"].(map[string]interface{})
+		spec, ok := policy.Object["spec"].(map[string]interface{})
+		if !ok {
+			continue
+		}
 
-		if file, ok := spec["file"].(map[string]interface{}); ok {
-			if dirs, ok := file["matchDirectories"].([]interface{}); ok {
-				for _, dir := range dirs {
-					dirMap := dir.(map[string]interface{})
-					dirPath := dirMap["dir"].(string)
-					action := dirMap["action"].(string)
+		file, ok := spec["file"].(map[string]interface{})
+		if !ok {
+			continue
+		}
 
-					for _, sensitiveDir := range sensitiveDirs {
-						if dirPath == sensitiveDir {
-							fmt.Printf("Found sensitive dir in policy %s:\n  Path: %s\n  Action: %s\n",
-								policy.GetName(), dirPath, action)
-						}
-					}
+		matchDirs, ok := file["matchDirectories"].([]interface{})
+		if !ok {
+			continue
+		}
+
+		for _, dir := range matchDirs {
+			dirMap, ok := dir.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			dirPath, ok := dirMap["dir"].(string)
+			if !ok {
+				continue
+			}
+
+			action, ok := dirMap["action"].(string)
+			if !ok {
+				continue
+			}
+
+			for _, sensitiveDir := range sensitiveDirs {
+				if dirPath == sensitiveDir {
+					fmt.Printf("Found sensitive dir in policy %s:\n  Path: %s\n  Action: %s\n",
+						policy.GetName(), dirPath, action)
 				}
-			} else if !ok {
-				fmt.Println("ERROR NOT FOUND")
 			}
 		}
 	}
