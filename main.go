@@ -328,7 +328,7 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 					fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 						policy.GetName(), dirPath, action)
 
-					return dirPath, nil
+					// return dirPath, nil
 				}
 			}
 		}
@@ -357,7 +357,7 @@ func checkSensitiveDirs(namespace string, config *rest.Config, sensitiveDirs []s
 					if filePath == sensitiveDir {
 						fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 							policy.GetName(), filePath, action)
-						return filePath, nil
+						// return filePath, nil
 					}
 				}
 			}
